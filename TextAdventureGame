@@ -1,0 +1,63 @@
+import java.util.Scanner;
+
+public class TextAdventureGame {
+
+    public static void main(String[] args) {
+        startGame();
+    }
+
+    public static void startGame() {
+        System.out.println("Welcome to the Text Adventure Game!");
+        System.out.println("You find yourself in a mysterious forest...");
+
+
+        playIntroduction();
+
+
+        makeDecision1();
+
+        endGame();
+    }
+
+    public static void playIntroduction() {
+        System.out.println("As you walk deeper into the forest, you encounter a fork in the path.");
+        System.out.println("To the left is a dark cave, and to the right is a narrow bridge.");
+
+        System.out.print("Which way do you choose? (left/right): ");
+        String decision = getUserInput();
+
+
+        if (decision.equalsIgnoreCase("left")) {
+            System.out.println("You enter the dark cave...");
+
+        } else if (decision.equalsIgnoreCase("right")) {
+            System.out.println("You cautiously cross the narrow bridge...");
+
+        } else {
+            System.out.println("Invalid input. Please enter 'left' or 'right'.");
+            playIntroduction();
+        }
+    }
+
+    public static void makeDecision1() {
+        System.out.println("After a short journey, you reach a clearing with two paths.");
+        System.out.println("One path leads to a magical garden, and the other leads to a haunted mansion.");
+
+        System.out.print("Which path will you take? (garden/mansion): ");
+        String decision = getUserInput();
+
+
+        if (decision.equalsIgnoreCase("garden")) {
+            System.out.println("You enter the enchanting garden...");
+            continueStoryFromGarden();
+
+        } else if (decision.equalsIgnoreCase("mansion")) {
+            System.out.println("You approach the creepy mansion...");
+            continueStoryFromMansion();
+
+        } else {
+            System.out.println("Invalid input. Please enter 'garden' or 'mansion'.");
+            makeDecision1();
+        }
+    }
+
