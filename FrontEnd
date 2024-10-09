@@ -2,7 +2,7 @@ Step 1: Set Up Your React Application
 Initialize the React project:
 
 bash
-Copy code
+Code
 npx create-react-app transactions-dashboard
 cd transactions-dashboard
 npm install axios chart.js react-chartjs-2
@@ -17,7 +17,7 @@ Step 2: Create the Components
 This component will handle the transaction listing.
 
 javascript
-Copy code
+Code
 // src/components/TransactionTable.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
@@ -77,7 +77,7 @@ export default TransactionTable;
 This component will display the statistics for the selected month.
 
 javascript
-Copy code
+Code
 // src/components/Statistics.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
@@ -109,7 +109,7 @@ export default Statistics;
 This component will display the bar chart using Chart.js.
 
 javascript
-Copy code
+Code
 // src/components/BarChart.js
 import React, { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
@@ -152,7 +152,7 @@ Step 3: Integrate Components in App.js
 Combine all components in the main App component.
 
 javascript
-Copy code
+Code
 // src/App.js
 import React, { useState } from 'react';
 import TransactionTable from './components/TransactionTable';
