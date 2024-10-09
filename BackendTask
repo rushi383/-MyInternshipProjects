@@ -1,0 +1,150 @@
+Step 1: Set Up the Project
+Initialize the project:
+
+bash
+Copy code
+mkdir product_transactions_api
+cd product_transactions_api
+npm init -y
+npm install express axios mongoose body-parser
+Set Up Mongoose: Create a MongoDB database to store the transaction data.
+
+Step 2: Define the Database Schema
+javascript
+Copy code
+// models/Transaction.js
+const mongoose = require('mongoose');
+
+const transactionSchema = new mongoose.Schema({
+    title: String,
+    description: String,
+    price: Number,
+    dateOfSale: Date,
+    category: String,
+});
+
+const Transaction = mongoose.model('Transaction', transactionSchema);
+
+module.exports = Transaction;
+Step 3: Initialize the Database
+javascript
+Copy code
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const axios = require('axios');
+const Transaction = require('./models/Transaction');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/product_transactions', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+
+// Initialize database from third-party API
+app.get('/initialize', async (req, res) => {
+    try {
+        const response = await axios.get('https://s3.amazonaws.com/roxiler.com/product_transaction.json');
+        const transactions = response.data;
+
+        await Transaction.deleteMany(); // Clear previous data
+        await Transaction.insertMany(transactions); // Insert new data
+
+        res.status(200).json({ message: 'Database initialized successfully!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to initialize database' });
+    }
+});
+Step 4: List Transactions with Search and Pagination
+javascript
+Copy code
+app.get('/transactions', async (req, res) => {
+    const { page = 1, perPage = 10, search = '' } = req.query;
+    const query = {
+        $or: [
+            { title: new RegExp(search, 'i') },
+            { description: new RegExp(search, 'i') },
+            { price: search }
+        ]
+    };
+
+    const transactions = await Transaction.find(query)
+        .skip((page - 1) * perPage)
+        .limit(Number(perPage));
+
+    const total = await Transaction.countDocuments(query);
+
+    res.status(200).json({ total, page, transactions });
+});
+Step 5: Statistics API
+javascript
+Copy code
+app.get('/statistics/:month', async (req, res) => {
+    const month = new Date(Date.parse(req.params.month + " 1, 2020")).getMonth(); // Use a dummy year
+
+    const totalSales = await Transaction.aggregate([
+        { $match: { $expr: { $eq: [{ $month: "$dateOfSale" }, month + 1] } } },
+        { $group: { _id: null, total: { $sum: "$price" }, count: { $sum: 1 } } }
+    ]);
+
+    const notSoldCount = await Transaction.countDocuments({ $expr: { $eq: [{ $month: "$dateOfSale" }, month + 1] } });
+
+    res.status(200).json({
+        totalSaleAmount: totalSales.length ? totalSales[0].total : 0,
+        totalSoldItems: totalSales.length ? totalSales[0].count : 0,
+        totalNotSoldItems: notSoldCount
+    });
+});
+Step 6: Bar Chart API
+javascript
+Copy code
+app.get('/bar-chart/:month', async (req, res) => {
+    const month = new Date(Date.parse(req.params.month + " 1, 2020")).getMonth(); // Dummy year
+
+    const ranges = [
+        { $match: { $expr: { $eq: [{ $month: "$dateOfSale" }, month + 1] } } },
+        { $group: { _id: { $cond: [{ $lt: ["$price", 100] }, "0-100", { $cond: [{ $lt: ["$price", 200] }, "101-200", { $cond: [{ $lt: ["$price", 300] }, "201-300", { $cond: [{ $lt: ["$price", 400] }, "301-400", { $cond: [{ $lt: ["$price", 500] }, "401-500", { $cond: [{ $lt: ["$price", 600] }, "501-600", { $cond: [{ $lt: ["$price", 700] }, "601-700", { $cond: [{ $lt: ["$price", 800] }, "701-800", { $cond: [{ $lt: ["$price", 900] }, "801-900", "901-above"] }] }] }] }] }] }] }] }] },
+        { $group: { _id: "$_id", count: { $sum: 1 } } },
+        { $project: { range: "$_id", count: "$count" } }
+    ];
+
+    const data = await Transaction.aggregate(ranges);
+    res.status(200).json(data);
+});
+Step 7: Pie Chart API
+javascript
+Copy code
+app.get('/pie-chart/:month', async (req, res) => {
+    const month = new Date(Date.parse(req.params.month + " 1, 2020")).getMonth(); // Dummy year
+
+    const data = await Transaction.aggregate([
+        { $match: { $expr: { $eq: [{ $month: "$dateOfSale" }, month + 1] } } },
+        { $group: { _id: "$category", count: { $sum: 1 } } },
+        { $project: { category: "$_id", count: "$count" } }
+    ]);
+
+    res.status(200).json(data);
+});
+Step 8: Combined API
+javascript
+Copy code
+app.get('/combined/:month', async (req, res) => {
+    const month = req.params.month;
+
+    const [stats, barChart, pieChart] = await Promise.all([
+        app.get('/statistics/' + month),
+        app.get('/bar-chart/' + month),
+        app.get('/pie-chart/' + month),
+    ]);
+
+    res.status(200).json({ stats, barChart, pieChart });
+});
+Step 9: Start the Server
+javascript
+Copy code
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
